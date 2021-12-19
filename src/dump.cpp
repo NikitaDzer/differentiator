@@ -28,6 +28,7 @@ dump_open()
            "\t\t\tborder: 3px solid #AAAAAA;                                            \n"
            "\t\t\tfont-size: 20px;                                                      \n"
            "\t\t\tpadding: 10px 20px;                                                   \n"
+           "\t\t\toverflow-y: auto;                                                     \n"
            "\t\t}                                                                       \n"
            "\t\t.tree_img {                                                             \n"
            "\t\t\toverflow-x: auto;                                                     \n"
@@ -57,12 +58,12 @@ dump_controller()
    }
 }
 
-#define OPERATOR(op_name, op_hash, code)        \
-        case op_hash:                           \
-        {                                       \
-            fprintf(dotfile, "%s", #op_name);   \
-            break;                              \
-        }                                       \
+#define OPERATOR(op_name, op_sign, op_hash, code, optimization)         \
+        case op_hash:                                          \
+        {                                                      \
+            fprintf(dotfile, "%s", #op_sign);                  \
+            break;                                             \
+        }                                                      \
 
 static void
 node_to_digraph(const TreeNode *const p_node)
@@ -150,7 +151,8 @@ tree_to_digraph(const Tree *const p_tree)
            "\tfontcolor = \"white\", fontsize = 8, fillcolor = \"#666666\", fontname = \"Consolas\"]       \n"
            "\tedge[arrowsize = 0.7, style = solid, penwidth = 1.1, color = \"#CCCCCC\"]                    \n");
    
-   node_to_digraph(p_tree->root);
+   if (p_tree->root->left)
+      node_to_digraph(p_tree->root->left);
    
    fprintf(dotfile, "}\n");
    assert(fclose(dotfile) == 0);
@@ -179,20 +181,16 @@ tree_dump(const Tree *const p_tree)
            "\t\t<hr width = '100%'>                                     \n"
            "\t\t<div class = 'tree'>                                    \n"
            "\t\t<pre>Tree  address:  %p</pre>                           \n"
-           "\t\t<pre>Root  address:  %p</pre>                           \n"
            "\t\t<pre>Free  address:  %p</pre>                           \n"
            "\t\t<pre>Final address:  %p</pre>                           \n"
-           "\t\t<pre>Size:           %zu</pre>                          \n"
            "\t\t<pre>Capacity:       %zu</pre>                          \n"
            "\t\t</div>                                                  \n"
            "\t\t<div class = 'tree_img'>                                \n"
-           "\t\t<img src = \"%s\" width = 100%>                         \n"
+           "\t\t<img src = \"%s\" width = \"100%\">                     \n"
            "\t\t</div>                                                  \n",
            p_tree,
-           p_tree->root,
            p_tree->free,
            p_tree->final,
-           p_tree->size,
            p_tree->capacity,
            tree_png_path);
    

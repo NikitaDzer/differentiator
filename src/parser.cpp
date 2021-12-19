@@ -1,7 +1,7 @@
 #include "../include/parser.h"
 #include "../include/hash.h"
 
-static const hash_t  HASH_VARIABLE     = 3738232232;     // hash of variable 'x'
+static const hash_t  HASH_VARIABLE     = 3738232232; // hash of variable 'x'
 
 static TreeNodeData  node_data         = {};
 static const char   *data_end          = nullptr;
@@ -10,14 +10,14 @@ static char         *trimmedExpression = nullptr;
 static Tree         *static_p_tree     = nullptr;
 static TreeNode     *static_p_node     = nullptr;
 
-#define OPERATOR(op_name, op_hash, code)                     \
-      case (op_hash):                                        \
-      {                                                      \
-         node_data.type     = TYPE_OP;                       \
-         node_data.value.op = (op_hash);                     \
-                                                             \
-         break;                                              \
-      }                                                      \
+#define OPERATOR(op_name, op_sign, op_hash, code, optimization)       \
+      case (op_hash):                                                 \
+      {                                                               \
+         node_data.type     = TYPE_OP;                                \
+         node_data.value.op = (op_hash);                              \
+                                                                      \
+         break;                                                       \
+      }                                                               \
       
 
 [[noreturn]] static void
@@ -113,6 +113,41 @@ NORETURN_bad_expression()
    printf("No expression to differentiate.\n");
    tree_destruct(static_p_tree);
    abort();
+}
+
+static long
+get_file_size(FILE *const file)
+{
+   assert(file);
+   
+   long position = ftell(file);
+   long size     = 0;
+   
+   fseek(file, 0L, SEEK_END);
+   size = ftell(file);
+   fseek(file, position, SEEK_SET);
+   
+   return size;
+}
+
+static const char*
+get_expression(const char *const expression_file_path)
+{
+   size_t  expression_file_size = 0;
+   FILE   *expression_file      = nullptr;
+   char   *expression           = nullptr;
+   
+   expression_file = fopen(expression_file_path, "r");
+   assert(expression_file);
+   
+   expression_file_size = get_file_size(expression_file);
+   expression           = (char *)calloc(expression_file_size, sizeof(char));
+   assert(expression);
+   
+   fread(expression, sizeof(char), expression_file_size, expression_file);
+   assert(fclose(expression_file) == 0);
+   
+   return expression;
 }
 
 static void
@@ -227,7 +262,7 @@ fill_node_data(const char *const start)
 }
 
 static const char*
-visitor(TreeNode *const p_father, const char *const start)
+visitor(TreeNode *const father, const char *const start)
 {
    if (*start != '(')
       NORETURN_bad_function();
@@ -235,15 +270,12 @@ visitor(TreeNode *const p_father, const char *const start)
    static_p_node = tree_add_node(static_p_tree);
    assert(static_p_node);
    
-   if (p_father != nullptr)
+   if (father != nullptr)
    {
-      if (p_father->left == nullptr)
-         tree_relate_nodes(p_father, &p_father->left, static_p_node);
-      else if (p_father->right == nullptr)
-         tree_relate_nodes(p_father, &p_father->right, static_p_node);
-      else
-         NORETURN_bad_operands_number(start);
+   
    }
+      if (tree_latinRelate(father, static_p_node) == nullptr)
+         NORETURN_bad_operands_number(start);
    
    const char *iterator = start + 1;
    
@@ -264,25 +296,34 @@ visitor(TreeNode *const p_father, const char *const start)
          if (static_p_node->left == nullptr && static_p_node->data.type == TreeNodeType::TYPE_OP)
             NORETURN_no_operand(start);
          
-         static_p_node = p_father;
+         static_p_node = father;
          return iterator + 1;
       }
    }
 }
 
-void
-parse(const char *const expression, Tree *const p_tree)
+static void
+parse(const char *const expression)
 {
    assert(expression);
-   assert(p_tree);
    
-   static_p_tree = p_tree;
    trim_expression(expression);
    validate_expression(trimmedExpression);
    
-   tree_add_node(p_tree);
-   
-   visitor(p_tree->root, trimmedExpression);
+   tree_add_node(static_p_tree);
+   visitor(static_p_tree->root, trimmedExpression);
    
    free(trimmedExpression);
+}
+
+Tree*
+get_expression_tree(const char *const expression_file_path)
+{
+   const char *const expression = get_expression(expression_file_path);
+   
+   static_p_tree = tree_construct();
+   parse(expression);
+   free((void *)expression);
+   
+   return static_p_tree;
 }

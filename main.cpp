@@ -1,49 +1,45 @@
 #include <cstdio>
+#include <ctime>
 #include "include/tree.h"
 #include "include/parser.h"
 #include "include/dump.h"
 #include "include/differentiator.h"
+#include "include/optimizer.h"
+#include "include/tex.h"
 
-static long
-get_file_size(FILE *const file)
-{
-   assert(file);
-   
-   long position = ftell(file);
-   long size     = 0;
-   
-   fseek(file, 0L, SEEK_END);
-   size = ftell(file);
-   fseek(file, position, SEEK_SET);
-   
-   return size;
-}
 
-int main()
+int
+main()
 {
-   FILE *const file = fopen("expression.exp", "r");
-   size_t      file_size = get_file_size(file);
-   char *const expression = (char *)calloc(file_size, sizeof(char));
+   size_t   derivative_order = 0;
+   Tree   **trees            = nullptr;
    
-   fread(expression, sizeof(char), file_size, file);
+   printf("Derivative order: ");
+   scanf("%zu", &derivative_order);
    
-   Tree tree_expression = {};
-   Tree tree_derivative = {};
-   tree_construct(&tree_expression);
-   tree_construct(&tree_derivative);
+   trees = (Tree **)calloc(derivative_order + 1, sizeof(Tree *));
+   assert(trees);
    
-   parse(expression, &tree_expression);
+   trees[0] = get_expression_tree();
+   tex(trees[0], 0);
    
-   differentiate(&tree_derivative, &tree_expression);
+   optimize(trees[0]);
+   tex(trees[0], 0);
    
-   tree_dump(&tree_expression);
-   tree_dump(&tree_derivative);
+   for (size_t i = 1; i <= derivative_order; i++)
+   {
+      trees[i] = differentiate(trees[i - 1]);
+      optimize(trees[i]);
+      tex(trees[i], i);
+   }
+   show_texfile();
    
-   tree_destruct(&tree_expression);
-   tree_destruct(&tree_derivative);
-   
-   free(expression);
-   fclose(file);
+   for (size_t i = 0; i < derivative_order + 1; i++)
+   {
+      tree_dump(trees[i]);
+      tree_destruct(trees[i]);
+   }
+   free(trees);
    
    return 0;
 }

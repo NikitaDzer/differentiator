@@ -3,6 +3,20 @@
 
 #include "config.h"
 
+enum TreeError
+{
+   PLUG              = 0 << 0,
+   BAD_ALLOC         = 1 << 0,
+   BAD_ARGUMENTS     = 1 << 1,
+   
+   BAD_PTR_TREE      = 1 << 4,
+   BAD_PTR_NODE      = 1 << 5,
+   BAD_PTR_DATA      = 1 << 6,
+   BAD_PTR_RELATION  = 1 << 7,
+   BAD_CAPACITY      = 1 << 8,
+   BOUND_RELATIONS   = 1 << 9,
+};
+
 enum TreeNodeType
 {
    TYPE_VARIABLE = 1,
@@ -26,47 +40,44 @@ struct TreeNodeData
 
 struct TreeNode
 {
-   TreeNode *father;
-   TreeNode *left;
-   TreeNode *right;
-   
-   TreeNodeData data;
+   TreeNodeData  data;
+   TreeNode     *left;
+   TreeNode     *right;
 };
 
 struct Tree
 {
    size_t    capacity;
-   size_t    size;
    
-   TreeNode *root;
    TreeNode *free;
+   TreeNode *root;
    TreeNode *final;
 };
-
-const tree_error_t TREE_NO_ERROR =  0;
-const tree_error_t TREE_ERROR    = -1;
 
 const TreeNodeData TREE_NODE_DEFAULT_DATA = {
         .value = { .op = 0 },
         .type  = TYPE_OP,
 };
 
-tree_error_t
-tree_construct(Tree *const p_tree, const size_t capacity = TREE_NODES_DEFAULT_NUMBER);
+Tree*
+tree_construct(const size_t initialCapacity = TREE_INITIAL_CAPACITY, tree_bitmask_t *const p_bitmask = nullptr);
 
 void
-tree_destruct(Tree *const p_tree);
+tree_destruct(Tree *const p_tree, tree_bitmask_t *const p_bitmask = nullptr);
 
 TreeNode*
-tree_fill_node(TreeNode *const p_node, const TreeNodeData *const p_data);
+tree_add_node(Tree *const p_tree, const TreeNodeData *const p_data = &TREE_NODE_DEFAULT_DATA, tree_bitmask_t *const p_bitmask = nullptr);
 
 TreeNode*
-tree_add_node(Tree *const p_tree, const TreeNodeData *const p_data = &TREE_NODE_DEFAULT_DATA);
+tree_relate(TreeNode *const p_father, TreeNode *const p_son, TreeNode **const p_relation, tree_bitmask_t *const p_bitmask = nullptr);
 
 TreeNode*
-tree_relate_nodes(TreeNode *const p_father, TreeNode **const p_father_son, TreeNode *const p_son);
+tree_latinRelate(TreeNode *const p_father, TreeNode *const p_son, tree_bitmask_t *const p_bitmask = nullptr);
 
 TreeNode*
-tree_latinRelate(TreeNode *const p_father, TreeNode *const p_son);
+tree_fill_node(TreeNode *const p_node, const TreeNodeData *const p_data, tree_bitmask_t *const p_bitmask = nullptr);
+
+void
+tree_parse_bitmask(const tree_bitmask_t bitmask);
 
 #endif //DIFFERENTIATOR_TREE_H

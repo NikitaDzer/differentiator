@@ -3,7 +3,8 @@
 
 #include "tree.h"
 
-void
-parse(const char *const expression, Tree *const p_tree);
+const char EXPRESSION_FILE_PATH[] = "expression.exp";
 
+Tree*
+get_expression_tree(const char *const expression_file_path = EXPRESSION_FILE_PATH);
 #endif // DIFFERENTIATOR_PARSER_H
